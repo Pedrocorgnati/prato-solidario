@@ -1,0 +1,189 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// ENUMS
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  DONOR_INDIVIDUAL
+  DONOR_RESTAURANT
+  MARMITARIA_PARTNER
+  RECEPTOR
+  ONG_AGENT
+  SPONSOR
+  ADMIN
+}
+
+enum DocumentType {
+  CPF
+  CNPJ
+}
+
+enum MarmitariaStatus {
+  PENDING_APPROVAL
+  ACTIVE
+  SUSPENDED
+  REJECTED
+}
+
+enum Platform {
+  android
+  ios
+  web
+}
+
+enum DonationStatus {
+  ACTIVE
+  PARTIALLY_ALLOCATED
+  FULLY_ALLOCATED
+  COMPLETED
+  EXPIRED
+  CANCELLED
+}
+
+enum DonationType {
+  CONVENTIONAL
+  SPONSORED
+}
+
+enum CodeStatus {
+  ACTIVE
+  CONFIRMED
+  EXPIRED
+}
+
+enum CodeType {
+  INDIVIDUAL
+  FAMILY
+}
+
+enum BlockLevel {
+  NONE
+  ONE_DAY
+  THREE_DAYS
+  PROGRESSIVE
+}
+
+enum BannerStatus {
+  ACTIVE
+  PAUSED
+  SCHEDULED
+  EXPIRED
+}
+
+enum NotificationType {
+  CODE_GENERATED
+  WINDOW_EXPIRING
+  DONATION_NEARBY
+  SPONSOR_CONFIRMATION
+}
+
+enum IncidentType {
+  DONOR_ABSENT
+  SUSPICIOUS_RECEPTOR
+  MULTIPLE_NO_SHOW
+}
+
+// ---------------------------------------------------------------------------
+// MODELS
+// ---------------------------------------------------------------------------
+
+model User {
+  id                   String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                String            @unique @db.VarChar(255)
+  role                 UserRole
+  name                 String            @db.VarChar(255)
+  phone                String?           @db.VarChar(20)
+  document             String?           @db.VarChar(14)
+  documentType         DocumentType?     @map("document_type")
+  photoUrl             String?           @map("photo_url")
+  isRedistributor      Boolean           @default(false) @map("is_redistributor")
+  marmitariaStatus     MarmitariaStatus? @map("marmitaria_status")
+  marmitariaPrice      Decimal?          @map("marmitaria_price") @db.Decimal(10, 2)
+  marmitariaSchedule   Json?             @map("marmitaria_schedule")
+  termsAcceptedAt      DateTime          @map("terms_accepted_at") @db.Timestamptz
+  privacyAcceptedAt    DateTime          @map("privacy_accepted_at") @db.Timestamptz
+  termsVersion         String            @default("1.0") @map("terms_version") @db.VarChar(20)
+  emailVerified        Boolean           @default(false) @map("email_verified")
+  isActive             Boolean           @default(true) @map("is_active")
+  deletedAt            DateTime?         @map("deleted_at") @db.Timestamptz
+  createdAt            DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt            DateTime          @updatedAt @map("updated_at") @db.Timestamptz
+
+  addresses  Address[]
+  pushTokens PushToken[]
+  auditLogs  AuditLog[]
+
+  @@index([role], name: "IDX_users_role")
+  @@index([isActive], name: "IDX_users_is_active")
+  @@map("users")
+}
+
+model Address {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  cep         String   @db.Char(8)
+  logradouro  String   @db.VarChar(255)
+  numero      String   @db.VarChar(20)
+  complemento String?  @db.VarChar(100)
+  bairro      String   @db.VarChar(100)
+  cidade      String   @db.VarChar(100)
+  estado      String   @db.Char(2)
+  lat         Float?
+  lng         Float?
+  isPrimary   Boolean  @default(true) @map("is_primary")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], name: "IDX_addresses_user_id")
+  @@index([cep], name: "IDX_addresses_cep")
+  @@map("addresses")
+}
+
+model PushToken {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String?  @map("user_id") @db.Uuid
+  deviceId  String   @map("device_id") @db.VarChar(255)
+  token     String   @unique @db.VarChar(255)
+  platform  Platform
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], name: "IDX_push_tokens_user_id")
+  @@index([deviceId], name: "IDX_push_tokens_device_id")
+  @@map("push_tokens")
+}
+
+model AuditLog {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String?  @map("user_id") @db.Uuid
+  action     String   @db.VarChar(100)
+  entityType String   @map("entity_type") @db.VarChar(50)
+  entityId   String?  @map("entity_id") @db.Uuid
+  metadata   Json?
+  ipAddress  String?  @map("ip_address") @db.VarChar(45)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId], name: "IDX_audit_logs_user_id")
+  @@index([action], name: "IDX_audit_logs_action")
+  @@index([createdAt], name: "IDX_audit_logs_created_at")
+  @@index([entityType, entityId], name: "IDX_audit_logs_entity")
+  @@map("audit_logs")
+}

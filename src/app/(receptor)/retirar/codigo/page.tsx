@@ -1,5 +1,6 @@
+export const dynamic = 'force-dynamic'
 import { WithdrawalCodeDisplay } from "@/components/shared/withdrawal-code-display"
-import { CodeStatus } from "@/lib/constants"
+import { RetrievalCodeStatus } from "@/lib/constants"
 
 // RESOLVED: código real via searchParams — lê os parâmetros da URL gerada pelo fluxo de solicitação
 // Parâmetros esperados: ?codigo=XXXX&endereco=...&inicio=HH:MM&fim=HH:MM&status=ATIVO
@@ -23,7 +24,7 @@ async function CodigoContent({
   const address = params.endereco ?? "Endereço não informado"
   const windowStart = params.inicio ?? "--:--"
   const windowEnd = params.fim ?? "--:--"
-  const status = (params.status as CodeStatus) ?? CodeStatus.ATIVO
+  const status = (params.status as RetrievalCodeStatus) ?? RetrievalCodeStatus.ACTIVE
 
   return (
     <div className="mx-auto max-w-sm px-4 pt-8">

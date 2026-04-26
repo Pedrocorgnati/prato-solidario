@@ -1,0 +1,86 @@
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
+import { env } from '@/lib/env'
+import { matchRoute, buildLoginRedirect, buildRedirectUrl, PUBLIC_ROUTES } from '@/lib/auth/middleware-utils'
+import { prisma } from '@/lib/prisma'
+
+/**
+ * Middleware Next.js — proteção de rotas por role + refresh de sessão Supabase.
+ * @see module-3-auth-login/TASK-3 (spec), TASK-5 (correção pós-auditoria)
+ * @see module-6-profile-lgpd/TASK-5/ST004 — bloqueio de conta excluída
+ *
+ * TODO: após testes em staging, remover `src/middleware.ts.bak`.
+ */
+export async function middleware(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({ request })
+
+  const pathname = request.nextUrl.pathname
+
+  // 0. Rotas públicas explícitas (ex: /conta-excluida) → deixar passar sem verificação
+  if (PUBLIC_ROUTES.some((p) => pathname === p || pathname.startsWith(p + '/'))) {
+    return supabaseResponse
+  }
+
+  const supabase = createServerClient(
+    env.NEXT_PUBLIC_SUPABASE_URL,
+    env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
+
+  // 1. Refresh de sessão — getUser() valida JWT no servidor Supabase (não getSession())
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  // 2. Rota pública → deixar passar com sessão atualizada
+  const rule = matchRoute(pathname)
+  if (!rule) return supabaseResponse
+
+  // 3. Rota protegida sem sessão → /login?redirectTo=...
+  if (!user) {
+    return NextResponse.redirect(buildLoginRedirect(request))
+  }
+
+  // 4. Bloqueio de conta excluída (module-6/TASK-5/ST004)
+  //    Verificar isActive e deletedAt no banco para rotas autenticadas
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { isActive: true, deletedAt: true },
+  }).catch(() => null)
+
+  if (dbUser && (!dbUser.isActive || dbUser.deletedAt !== null)) {
+    // Revogar sessão Supabase
+    await supabase.auth.signOut()
+    return NextResponse.redirect(buildRedirectUrl(request, '/conta-excluida'))
+  }
+
+  // 5. Rota requireAuth (qualquer autenticado) → passou
+  if (rule.requireAuth && !rule.allowedRoles) return supabaseResponse
+
+  // 6. Verificar role específico
+  const role = user.user_metadata?.role as string
+  if (rule.allowedRoles && !rule.allowedRoles.includes(role)) {
+    return NextResponse.redirect(buildRedirectUrl(request, '/403'))
+  }
+
+  return supabaseResponse
+}
+
+export const config = {
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|api/|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+  ],
+}

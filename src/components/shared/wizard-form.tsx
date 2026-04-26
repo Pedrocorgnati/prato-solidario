@@ -15,14 +15,19 @@ interface WizardStep {
 interface WizardFormProps {
   steps: WizardStep[]
   onComplete: () => void
+  /** Chamado antes de avançar para a próxima etapa. Retorne `false` para bloquear o avanço. */
+  onBeforeNext?: (currentStep: number) => boolean
   completeLabel?: string
+  completeDisabled?: boolean
   className?: string
 }
 
 export function WizardForm({
   steps,
   onComplete,
+  onBeforeNext,
   completeLabel = "Finalizar",
+  completeDisabled = false,
   className,
 }: WizardFormProps) {
   const [current, setCurrent] = React.useState(0)
@@ -64,9 +69,11 @@ export function WizardForm({
           variant="default"
           size="lg"
           className="w-full"
+          disabled={completeDisabled && current === steps.length - 1}
           onClick={() => {
             if (current < steps.length - 1) {
-              setCurrent((c) => c + 1)
+              const canAdvance = onBeforeNext ? onBeforeNext(current) : true
+              if (canAdvance) setCurrent((c) => c + 1)
             } else {
               onComplete()
             }

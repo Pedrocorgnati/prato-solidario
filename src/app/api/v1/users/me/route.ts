@@ -1,21 +1,15 @@
 import { NextRequest } from 'next/server'
-import { authService } from '@/services/auth.service'
+import { getServerSession } from '@/lib/auth/session'
 import { userService } from '@/services/user.service'
 import { updateUserSchema } from '@/schemas/user.schema'
 import { errorResponse, AUTH_007, USER_007, SYS_001 } from '@/constants/errors'
 
-async function getAuthUser(request: NextRequest) {
-  const token = request.headers.get('authorization')?.split(' ')[1]
-  if (!token) return null
-  return authService.getSessionFromToken(token)
-}
-
 export async function GET(request: NextRequest) {
-  const auth = await getAuthUser(request)
+  const auth = await getServerSession()
   if (!auth) return errorResponse(AUTH_007)
 
   try {
-    const user = await userService.getUserById(auth.userId)
+    const user = await userService.getUserById(auth.id)
     if (!user) return errorResponse(USER_007)
     return Response.json({ data: user })
   } catch {
@@ -24,7 +18,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const auth = await getAuthUser(request)
+  const auth = await getServerSession()
   if (!auth) return errorResponse(AUTH_007)
 
   let body: unknown
@@ -45,7 +39,7 @@ export async function PATCH(request: NextRequest) {
   const ip = request.headers.get('x-forwarded-for') ?? undefined
 
   try {
-    const user = await userService.updateUser(auth.userId, parsed.data, ip)
+    const user = await userService.updateUser(auth.id, parsed.data, ip)
     return Response.json({ data: user })
   } catch {
     return errorResponse(SYS_001)

@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { EmptyState } from "@/components/ui/empty-state"
 import { Tag } from "lucide-react"
 

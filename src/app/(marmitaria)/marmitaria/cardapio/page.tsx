@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { BookOpen } from "lucide-react"
 import { EmptyState } from "@/components/ui/empty-state"
 

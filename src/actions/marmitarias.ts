@@ -25,12 +25,17 @@ export async function updateMarmitaria(_id: string, _data: Record<string, unknow
 }
 
 export async function connectMercadoPago(_code: string) {
-  throw new Error('Not implemented - run /auto-flow execute')
+  // Implementado via /api/v1/auth/mercadopago/callback (module-12)
+  throw new Error('Use GET /api/v1/auth/mercadopago/callback para processar o OAuth callback')
 }
 
-// RESOLVED: stub para OAuth Mercado Pago — Rock 2 preenche a URL real do MP Connect
-// Fluxo: initMercadoPagoOAuth() → redirect MP → callback /api/v1/mp/callback → connectMercadoPago(code)
+/**
+ * Retorna a URL de autorização OAuth do MercadoPago para redirect client-side.
+ * @deprecated Usar link direto para /api/v1/auth/mercadopago/authorize (Server Component + <a>)
+ */
 export async function initMercadoPagoOAuth(): Promise<{ data: { authUrl: string } | null; error: string | null }> {
-  // TODO (Rock 2): const authUrl = `https://auth.mercadopago.com/authorization?client_id=${process.env.MP_CLIENT_ID}&...`
-  return { data: null, error: "Integração Mercado Pago será habilitada em breve." }
+  return { data: { authUrl: '/api/v1/auth/mercadopago/authorize' }, error: null }
 }
+
+// Re-export da Server Action colocada com a página de integração
+export { disconnectMPAction } from '@/app/(marmitaria)/marmitaria/integracoes/mercadopago/actions'

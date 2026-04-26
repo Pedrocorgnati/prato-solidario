@@ -31,8 +31,14 @@ export function PhotoUpload({
   const [error, setError] = React.useState("")
   const inputRef = React.useRef<HTMLInputElement>(null)
 
+  const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp']
+
   async function handleFile(file: File) {
     setError("")
+    if (!ALLOWED_MIME.includes(file.type)) {
+      setError("Formato não suportado. Use JPEG, PNG ou WebP.")
+      return
+    }
     if (file.size > maxSizeMb * 1024 * 1024) {
       setError(`Arquivo muito grande. Máximo ${maxSizeMb}MB.`)
       return

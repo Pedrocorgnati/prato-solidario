@@ -8,8 +8,8 @@ import { cn } from "@/lib/utils"
 import { BottomNav } from "@/components/shared/bottom-nav"
 import { UserRole, ROUTES } from "@/lib/constants"
 import { Bell, LogOut } from "lucide-react"
-// RESOLVED: href={ROUTES.HOME} hardcoded → ROUTES.HOME
 import { Button } from "@/components/ui/button"
+import { useAuth } from "@/hooks/useAuth"
 
 interface SidebarItem {
   href: string
@@ -31,6 +31,7 @@ export function DashboardLayout({
   userName,
 }: DashboardLayoutProps) {
   const pathname = usePathname()
+  const { signOut } = useAuth()
 
   return (
     <div className="flex min-h-screen bg-[var(--color-background-raw)]">
@@ -56,7 +57,7 @@ export function DashboardLayout({
             />
           </Link>
         </div>
-        <nav data-testid="sidebar-nav" className="flex flex-col gap-1 p-3 flex-1">
+        <nav data-testid="sidebar-nav" aria-label="Menu lateral" className="flex flex-col gap-1 p-3 flex-1">
           {sidebarItems.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
             const slug = item.href.split("/").filter(Boolean).pop() ?? "home"
@@ -82,7 +83,7 @@ export function DashboardLayout({
           {userName && (
             <p data-testid="sidebar-user-name" className="truncate px-3 text-xs text-[var(--color-text-muted)] mb-1">{userName}</p>
           )}
-          <Button data-testid="sidebar-logout-button" variant="ghost" size="md" className="w-full justify-start">
+          <Button data-testid="sidebar-logout-button" variant="ghost" size="md" className="w-full justify-start" onClick={() => signOut()}>
             <LogOut className="mr-2 h-4 w-4" />
             Sair
           </Button>

@@ -31,7 +31,8 @@
   --color-surface: #F5F2EC;
   --color-text-primary: #1C2B1F;
   --color-text-secondary: #57534E;
-  --color-text-muted: #78849A;
+  /* #78849A falhava WCAG AA (3.74:1) sobre background — ajustado para 5.3:1 (intake-review TASK-4/ST002) */
+  --color-text-muted: #5A6478;
   --color-border-raw: #DDD8D0;
   --color-muted-raw: #F0EDE7;
   --color-success: #047857;
@@ -117,6 +118,26 @@
     background-color: var(--color-background-raw);
     color: var(--color-text-primary);
     font-family: var(--font-family-base);
+  }
+
+  /* Focus visible unificado — WCAG 2.1 AA (intake-review TASK-4/ST004) */
+  :where(a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible {
+    outline: 2px solid var(--ring, var(--color-primary-raw));
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Screen-reader only util (para quando Tailwind sr-only nao estiver carregado) */
+  .sr-only-ssr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 }
 

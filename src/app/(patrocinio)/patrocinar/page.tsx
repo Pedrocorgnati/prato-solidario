@@ -1,42 +1,70 @@
-"use client"
+'use client'
+export const dynamic = 'force-dynamic'
 
-import * as React from "react"
-import { MarmitariaCard } from "@/components/shared/marmitaria-card"
-import { FilterBar } from "@/components/ui/filter-bar"
-import { LoadingSkeleton } from "@/components/ui/loading-skeleton"
-import { EmptyState } from "@/components/ui/empty-state"
-import { ChefHat } from "lucide-react"
-import { listMarmitarias } from "@/actions/marmitarias"
+/**
+ * Página de patrocínio — solicita geolocalização para filtrar marmitarias próximas.
+ * Substituiu Server Component (intake-review TASK-9 ST004)
+ */
+
+import * as React from 'react'
+import { ChefHat } from 'lucide-react'
+import { toast } from 'sonner'
+import { MarmitariaCard } from '@/components/shared/marmitaria-card'
+import { EmptyState } from '@/components/ui/empty-state'
+import { LoadingSkeleton } from '@/components/ui/loading-skeleton'
+
+interface MarmitariaItem {
+  id: string
+  name: string
+  tradeName?: string
+  photo?: string | null
+  neighborhood?: string | null
+  city?: string | null
+  address?: string | null
+  pricePerMeal?: number | null
+  rating?: number | null
+  distance?: number | null
+}
 
 export default function PatrocinarPage() {
+  const [marmitarias, setMarmitarias] = React.useState<MarmitariaItem[]>([])
   const [loading, setLoading] = React.useState(true)
-  const [search, setSearch] = React.useState("")
-  const [marmitarias] = React.useState([
-    {
-      id: "1",
-      name: "Marmitaria da Dona Maria",
-      address: "Rua das Palmeiras, 45 — Vila Madalena",
-      pricePerMeal: 14.0,
-      rating: 4.8,
-      distance: "1.2km",
-    },
-    {
-      id: "2",
-      name: "Cantina do Saber",
-      address: "Av. Paulista, 200 — Bela Vista",
-      pricePerMeal: 12.5,
-      rating: 4.5,
-      distance: "2.8km",
-    },
-  ])
 
   React.useEffect(() => {
-    setLoading(false)
-  }, [])
+    function fetchMarmitarias(lat?: number, lng?: number) {
+      const params = new URLSearchParams({ pageSize: '50' })
+      if (lat !== undefined && lng !== undefined) {
+        params.set('lat', String(lat))
+        params.set('lng', String(lng))
+        params.set('radius', '10') // 10km default
+      }
 
-  const filtered = marmitarias.filter((m) =>
-    m.name.toLowerCase().includes(search.toLowerCase())
-  )
+      fetch(`/api/v1/marmitarias/public?${params.toString()}`, { cache: 'no-store' })
+        .then((res) => (res.ok ? res.json() : Promise.reject(res.status)))
+        .then((data) => setMarmitarias(data.items ?? []))
+        .catch(() => toast.error('Erro ao carregar marmitarias. Tente recarregar.'))
+        .finally(() => setLoading(false))
+    }
+
+    if (!navigator.geolocation) {
+      fetchMarmitarias()
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        fetchMarmitarias(pos.coords.latitude, pos.coords.longitude)
+      },
+      () => {
+        // Permissão negada ou erro — listar todas sem filtro
+        toast('Ative a localização para ver marmitarias próximas', {
+          icon: '📍',
+        })
+        fetchMarmitarias()
+      },
+      { timeout: 5000 }
+    )
+  }, [])
 
   return (
     <div data-testid="patrocinar-page" className="mx-auto max-w-4xl px-4 py-8 space-y-6">
@@ -48,24 +76,39 @@ export default function PatrocinarPage() {
           Escolha uma marmitaria e patrocine refeições solidárias
         </p>
       </div>
-      <FilterBar
-        data-testid="patrocinar-search"
-        search={search}
-        onSearchChange={setSearch}
-        searchPlaceholder="Buscar marmitaria..."
-      />
+
       {loading ? (
-        <LoadingSkeleton variant="card" count={3} />
-      ) : filtered.length === 0 ? (
+        <div data-testid="skeleton-marmitarias">
+          <LoadingSkeleton variant="card" count={6} />
+        </div>
+      ) : !marmitarias || marmitarias.length === 0 ? (
         <EmptyState
           icon={<ChefHat className="h-8 w-8" />}
-          title="Nenhuma marmitaria encontrada"
-          description="Tente outro termo de busca."
+          title="Nenhuma marmitaria parceira disponível no momento."
+          description="Volte em breve — novas marmitarias são cadastradas frequentemente."
         />
       ) : (
-        <div data-testid="patrocinar-marmitarias-list" className="grid gap-4 sm:grid-cols-2">
-          {filtered.map((m) => (
-            <MarmitariaCard key={m.id} {...m} />
+        <div
+          data-testid="patrocinar-marmitarias-list"
+          className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+        >
+          {marmitarias.map((m) => (
+            <MarmitariaCard
+              key={m.id}
+              id={m.id}
+              name={m.tradeName ?? m.name}
+              photo={m.photo ?? undefined}
+              address={
+                m.address ??
+                [m.neighborhood, m.city].filter(Boolean).join(', ') ||
+                undefined
+              }
+              pricePerMeal={Number(m.pricePerMeal ?? 0)}
+              rating={m.rating ?? undefined}
+              distance={
+                m.distance != null ? `${m.distance} km` : undefined
+              }
+            />
           ))}
         </div>
       )}

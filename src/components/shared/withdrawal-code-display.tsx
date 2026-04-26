@@ -4,24 +4,24 @@ import * as React from "react"
 import { Copy, Check } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { CodeStatus } from "@/lib/constants"
+import { RetrievalCodeStatus } from "@/lib/constants"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 
 interface WithdrawalCodeDisplayProps {
   code: string
-  status: CodeStatus
+  status: RetrievalCodeStatus
   address?: string
   windowStart?: string
   windowEnd?: string
   className?: string
 }
 
-const statusConfig: Record<CodeStatus, { label: string; color: string }> = {
-  [CodeStatus.ATIVO]: { label: "Ativo", color: "bg-[var(--color-success)] text-white" },
-  [CodeStatus.CONFIRMADO]: { label: "Confirmado", color: "bg-[var(--color-info)] text-white" },
-  [CodeStatus.EXPIRADO]: { label: "Expirado", color: "bg-[var(--color-text-muted)] text-white" },
-  [CodeStatus.CANCELADO]: { label: "Cancelado", color: "bg-[var(--color-danger)] text-white" },
+const statusConfig: Record<RetrievalCodeStatus, { label: string; color: string }> = {
+  [RetrievalCodeStatus.ACTIVE]: { label: "Ativo", color: "bg-[var(--color-success)] text-white" },
+  [RetrievalCodeStatus.CONFIRMED]: { label: "Confirmado", color: "bg-[var(--color-info)] text-white" },
+  [RetrievalCodeStatus.EXPIRED]: { label: "Expirado", color: "bg-[var(--color-text-muted)] text-white" },
+  [RetrievalCodeStatus.CANCELLED]: { label: "Cancelado", color: "bg-[var(--color-danger)] text-white" },
 }
 
 export function WithdrawalCodeDisplay({
@@ -51,9 +51,9 @@ export function WithdrawalCodeDisplay({
       <div
         className={cn(
           "flex h-24 w-24 items-center justify-center rounded-full",
-          status === CodeStatus.ATIVO && "bg-[var(--color-success)]/10",
-          status === CodeStatus.CONFIRMADO && "bg-[var(--color-info)]/10",
-          (status === CodeStatus.EXPIRADO || status === CodeStatus.CANCELADO) &&
+          status === RetrievalCodeStatus.ACTIVE && "bg-[var(--color-success)]/10",
+          status === RetrievalCodeStatus.CONFIRMED && "bg-[var(--color-info)]/10",
+          (status === RetrievalCodeStatus.EXPIRED || status === RetrievalCodeStatus.CANCELLED) &&
             "bg-[var(--color-muted-raw)]"
         )}
       >
@@ -62,9 +62,9 @@ export function WithdrawalCodeDisplay({
             "font-bold",
             "text-[clamp(2.5rem,8vw,4rem)]",
             "tracking-widest font-mono leading-none",
-            status === CodeStatus.ATIVO && "text-[var(--color-success)]",
-            status === CodeStatus.CONFIRMADO && "text-[var(--color-info)]",
-            (status === CodeStatus.EXPIRADO || status === CodeStatus.CANCELADO) &&
+            status === RetrievalCodeStatus.ACTIVE && "text-[var(--color-success)]",
+            status === RetrievalCodeStatus.CONFIRMED && "text-[var(--color-info)]",
+            (status === RetrievalCodeStatus.EXPIRED || status === RetrievalCodeStatus.CANCELLED) &&
               "text-[var(--color-text-muted)]"
           )}
           aria-label={`Código de retirada: ${code.split("").join(" ")}`}
@@ -77,7 +77,7 @@ export function WithdrawalCodeDisplay({
         {config.label}
       </span>
 
-      {status === CodeStatus.ATIVO && (
+      {status === RetrievalCodeStatus.ACTIVE && (
         <Button data-testid="withdrawal-code-copy-button" variant="outline" size="md" onClick={handleCopy} className="gap-2">
           {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           {copied ? "Copiado!" : "Copiar código"}

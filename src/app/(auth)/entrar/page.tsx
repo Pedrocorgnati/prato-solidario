@@ -1,7 +1,10 @@
+export const dynamic = 'force-dynamic'
+import { redirect } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { UtensilsCrossed, Heart, ChefHat, Building2, Gift } from "lucide-react"
 import { ROUTES } from "@/lib/constants"
+import { getServerSession, getLoginRedirect } from "@/lib/auth/session"
 
 export const metadata = { title: "Entrar — Prato Solidário" }
 
@@ -43,7 +46,12 @@ const paths = [
   },
 ]
 
-export default function EntrarPage() {
+export default async function EntrarPage() {
+  const session = await getServerSession()
+  if (session) {
+    redirect(getLoginRedirect(session.role as string))
+  }
+
   return (
     <div className="min-h-screen bg-[var(--color-primary-raw)]/5 flex flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">

@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { MapPin } from "lucide-react"
 import { EmptyState } from "@/components/ui/empty-state"
 

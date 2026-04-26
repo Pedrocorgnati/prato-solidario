@@ -11,6 +11,7 @@ interface SchedulePickerProps {
   onStartChange?: (value: string) => void
   onEndChange?: (value: string) => void
   error?: string
+  name?: string
   className?: string
 }
 
@@ -27,61 +28,67 @@ function formatDuration(minutes: number): string {
   return `${h}h${m}min`
 }
 
-export function SchedulePicker({
-  startValue = "",
-  endValue = "",
-  onStartChange,
-  onEndChange,
-  error,
-  className,
-}: SchedulePickerProps) {
-  const duration =
-    startValue && endValue
-      ? timeToMinutes(endValue) - timeToMinutes(startValue)
-      : null
+const MIN_INTERVAL_MINUTES = 30
 
-  return (
-    <div className={cn("space-y-3", className)}>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <Label className="text-sm font-medium">Início</Label>
-          <Input
-            type="text"
-            placeholder="00:00"
-            value={startValue}
-            onChange={(e) => {
-              const v = e.target.value.replace(/[^\d:]/g, "")
-              onStartChange?.(v)
-            }}
-            maxLength={5}
-            inputMode="numeric"
-          />
+export const SchedulePicker = React.forwardRef<HTMLInputElement, SchedulePickerProps>(
+  function SchedulePicker(
+    {
+      startValue = "",
+      endValue = "",
+      onStartChange,
+      onEndChange,
+      error,
+      name,
+      className,
+    },
+    ref
+  ) {
+    const duration =
+      startValue && endValue
+        ? timeToMinutes(endValue) - timeToMinutes(startValue)
+        : null
+
+    const intervalError =
+      duration !== null && duration > 0 && duration < MIN_INTERVAL_MINUTES
+        ? "Intervalo mínimo de 30 minutos"
+        : ""
+
+    const displayError = error || intervalError
+
+    return (
+      <div className={cn("space-y-3", className)}>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label className="text-sm font-medium">Início</Label>
+            <Input
+              ref={ref}
+              name={name ? `${name}.start` : undefined}
+              type="time"
+              value={startValue}
+              onChange={(e) => onStartChange?.(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-sm font-medium">Fim</Label>
+            <Input
+              name={name ? `${name}.end` : undefined}
+              type="time"
+              value={endValue}
+              onChange={(e) => onEndChange?.(e.target.value)}
+            />
+          </div>
         </div>
-        <div className="space-y-1">
-          <Label className="text-sm font-medium">Fim</Label>
-          <Input
-            type="text"
-            placeholder="00:00"
-            value={endValue}
-            onChange={(e) => {
-              const v = e.target.value.replace(/[^\d:]/g, "")
-              onEndChange?.(v)
-            }}
-            maxLength={5}
-            inputMode="numeric"
-          />
-        </div>
+        {duration !== null && duration >= MIN_INTERVAL_MINUTES && (
+          <p className="text-xs text-[var(--color-text-muted)]">
+            Duração: {formatDuration(duration)}
+          </p>
+        )}
+        {displayError && (
+          <p className="text-xs text-[var(--color-danger)]" role="alert">
+            {displayError}
+          </p>
+        )}
       </div>
-      {duration !== null && duration > 0 && (
-        <p className="text-xs text-[var(--color-text-muted)]">
-          Duração: {formatDuration(duration)}
-        </p>
-      )}
-      {error && (
-        <p className="text-xs text-[var(--color-danger)]" role="alert">
-          {error}
-        </p>
-      )}
-    </div>
-  )
-}
+    )
+  }
+)

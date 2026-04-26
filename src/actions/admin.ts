@@ -1,29 +1,17 @@
 'use server'
 
-export async function listUsers(_params?: { page?: number; role?: string; search?: string }) {
-  // TODO: Implementar backend
-  return { data: [], total: 0 }
-}
+/**
+ * Server Actions de admin — redireciona para implementações reais.
+ * Mantido para compatibilidade com imports existentes.
+ * @deprecated Use admin-list.actions.ts e admin-users.actions.ts diretamente.
+ */
 
-export async function approveUser(_userId: string) {
-  throw new Error('Not implemented - run /auto-flow execute')
-}
-
-export async function suspendUser(_userId: string, _reason?: string) {
-  throw new Error('Not implemented - run /auto-flow execute')
-}
-
-export async function listIncidents(_params?: { page?: number; status?: string }) {
-  // TODO: Implementar backend
-  return { data: [], total: 0 }
-}
-
-export async function resolveIncident(_incidentId: string, _resolution: string) {
-  throw new Error('Not implemented - run /auto-flow execute')
-}
+export { listUsersAdmin as listUsers } from './admin-list.actions'
+export { listIncidentsAdmin as listIncidents } from './admin-list.actions'
+export { suspendUser, reactivateUser } from './admin-users.actions'
+export { resolveIncident } from './admin-incidents.actions'
 
 export async function getAdminStats() {
-  // TODO: Implementar backend
   return {
     data: {
       totalUsers: 0,

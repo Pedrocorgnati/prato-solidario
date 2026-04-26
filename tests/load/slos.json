@@ -1,0 +1,60 @@
+{
+  "_comment": "SLOs por cenário — defaults por tipo de operação (SLO-SPEC.md não existe). Executar /slo-create em F11 para formalizar.",
+  "_generated_by": "/load-test-create em 2026-04-08",
+  "_stack": "Next.js 16 + Supabase Auth + PostgreSQL (Vercel)",
+  "global": {
+    "error_rate_max": 0.01,
+    "http_req_failed_max": 0.05
+  },
+  "scenarios": {
+    "homepage": {
+      "type": "página estática",
+      "p95_ms": 500,
+      "p99_ms": 1000,
+      "error_rate_max": 0.01
+    },
+    "health-check": {
+      "type": "health endpoint",
+      "p95_ms": 200,
+      "p99_ms": 400,
+      "error_rate_max": 0.01
+    },
+    "login": {
+      "type": "autenticação",
+      "p95_ms": 800,
+      "p99_ms": 2000,
+      "error_rate_max": 0.01
+    },
+    "session": {
+      "type": "API leitura (GET)",
+      "p95_ms": 400,
+      "p99_ms": 800,
+      "error_rate_max": 0.01
+    },
+    "public-metrics": {
+      "type": "API leitura (GET)",
+      "p95_ms": 400,
+      "p99_ms": 800,
+      "error_rate_max": 0.01
+    },
+    "donations-available": {
+      "type": "API leitura (GET)",
+      "p95_ms": 400,
+      "p99_ms": 800,
+      "error_rate_max": 0.01
+    },
+    "active-banners": {
+      "type": "API leitura (GET)",
+      "p95_ms": 400,
+      "p99_ms": 800,
+      "error_rate_max": 0.01
+    },
+    "geo-cep": {
+      "type": "proxy externo (ViaCEP)",
+      "p95_ms": 800,
+      "p99_ms": 2000,
+      "error_rate_max": 0.02,
+      "_note": "SLO mais permissivo por depender de serviço externo ViaCEP"
+    }
+  }
+}

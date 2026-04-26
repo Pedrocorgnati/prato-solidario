@@ -1,4 +1,5 @@
 "use client"
+export const dynamic = 'force-dynamic'
 
 import * as React from "react"
 import { useForm } from "react-hook-form"
@@ -8,9 +9,8 @@ import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { ROUTES } from "@/lib/constants"
-import { reportAbsence } from "@/actions/codes"
 
 const schema = z.object({
   reason: z.string().min(10, "Descreva o problema com pelo menos 10 caracteres"),
@@ -18,17 +18,42 @@ const schema = z.object({
 
 export default function ReportarPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const codeId = searchParams.get("codeId")
   const [loading, setLoading] = React.useState(false)
   const { register, handleSubmit, formState: { errors } } = useForm<{ reason: string }>({
     resolver: zodResolver(schema),
   })
 
   async function onSubmit({ reason }: { reason: string }) {
+    if (!codeId) {
+      toast.error("Código de retirada não identificado.")
+      return
+    }
     setLoading(true)
     try {
-      await reportAbsence("code-id", reason)
-      toast.success("Problema reportado. Obrigado pelo feedback!")
-      router.push(ROUTES.RETIRAR)
+      const res = await fetch(`/api/v1/codes/${codeId}/report`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: reason }),
+      })
+      if (res.ok) {
+        const body = await res.json().catch(() => ({}))
+        const nextDonation = body?.nextDonation as { id: string } | null | undefined
+
+        if (nextDonation?.id) {
+          // Buscando próximo doador — feedback visual antes do redirect
+          toast.success("Buscando próximo doador...")
+          await new Promise((resolve) => setTimeout(resolve, 1500))
+          router.push(`${ROUTES.RETIRAR}/${nextDonation.id}`)
+        } else {
+          toast.success("Ausência registrada. Nenhum doador disponível no momento.")
+          router.push(ROUTES.RETIRAR)
+        }
+      } else {
+        const body = await res.json().catch(() => ({}))
+        toast.error(body?.message ?? "Erro ao reportar. Tente novamente.")
+      }
     } catch {
       toast.error("Erro ao reportar. Tente novamente.")
     } finally {
@@ -71,9 +96,14 @@ export default function ReportarPage() {
             <p className="text-xs text-[var(--color-danger)]">{errors.reason.message}</p>
           )}
         </div>
-        <Button type="submit" variant="default" size="lg" className="w-full" disabled={loading}>
+        <Button type="submit" variant="default" size="lg" className="w-full" disabled={loading || !codeId}>
           {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Enviando...</> : "Enviar relato"}
         </Button>
+        {!codeId && (
+          <p className="text-xs text-[var(--color-text-muted)] text-center">
+            Acesse esta página a partir da tela de retirada com um código válido.
+          </p>
+        )}
       </form>
     </div>
   )

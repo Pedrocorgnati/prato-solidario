@@ -33,9 +33,14 @@ export default function Error({
           </p>
         )}
       </div>
-      <Button variant="default" size="lg" onClick={reset}>
-        Tentar novamente
-      </Button>
+      <div className="flex flex-col sm:flex-row gap-3">
+        <Button variant="default" size="lg" onClick={reset}>
+          Tentar novamente
+        </Button>
+        <Button variant="outline" size="lg" asChild>
+          <a href="/">Ir ao início</a>
+        </Button>
+      </div>
     </div>
   )
 }

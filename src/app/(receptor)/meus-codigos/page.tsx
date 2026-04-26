@@ -1,15 +1,17 @@
 "use client"
+export const dynamic = 'force-dynamic'
 
 import * as React from "react"
 import { LoadingSkeleton } from "@/components/ui/loading-skeleton"
 import { EmptyState } from "@/components/ui/empty-state"
 import { WithdrawalCodeDisplay } from "@/components/shared/withdrawal-code-display"
 import { Badge } from "@/components/ui/badge"
-import { CodeStatus } from "@/lib/constants"
+import { RetrievalCodeStatus } from "@/lib/constants"
 import { listActiveCodes } from "@/actions/codes"
 import { Tag } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { ROUTES } from "@/lib/constants"
+import { BlockStatusBanner } from "@/components/receptor/block-status-banner"
 
 export default function MeusCodigosPage() {
   const [loading, setLoading] = React.useState(true)
@@ -25,6 +27,7 @@ export default function MeusCodigosPage() {
 
   return (
     <div className="mx-auto max-w-lg px-4 pt-6 space-y-4">
+      <BlockStatusBanner />
       <h1 className="text-xl font-bold text-[var(--color-text-primary)]">Meus Códigos</h1>
       {loading ? (
         <LoadingSkeleton variant="card" count={2} />
@@ -40,7 +43,7 @@ export default function MeusCodigosPage() {
           <WithdrawalCodeDisplay
             key={idx}
             code={`${4800 + idx}`}
-            status={CodeStatus.ATIVO}
+            status={RetrievalCodeStatus.ACTIVE}
             address="Restaurante Exemplo — Rua das Flores, 123"
             windowStart="12:00"
             windowEnd="14:00"

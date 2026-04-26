@@ -29,7 +29,14 @@ const navByRole: Record<string, NavItem[]> = {
     { href: "/retirar/historico", label: "Histórico", icon: <History className="h-5 w-5" /> },
     { href: "/perfil", label: "Conta", icon: <User className="h-5 w-5" /> },
   ],
-  [UserRole.DOADOR]: [
+  // RESOLVED: UserRole.DOADOR não existe — mapeado para DOADOR_PF e DOADOR_RESTAURANTE
+  [UserRole.DOADOR_PF]: [
+    { href: "/doador", label: "Início", icon: <Home className="h-5 w-5" /> },
+    { href: "/doador/nova", label: "Publicar", icon: <Plus className="h-5 w-5" /> },
+    { href: "/doador/historico", label: "Histórico", icon: <History className="h-5 w-5" /> },
+    { href: "/perfil", label: "Perfil", icon: <User className="h-5 w-5" /> },
+  ],
+  [UserRole.DOADOR_RESTAURANTE]: [
     { href: "/doador", label: "Início", icon: <Home className="h-5 w-5" /> },
     { href: "/doador/nova", label: "Publicar", icon: <Plus className="h-5 w-5" /> },
     { href: "/doador/historico", label: "Histórico", icon: <History className="h-5 w-5" /> },
@@ -42,11 +49,11 @@ const navByRole: Record<string, NavItem[]> = {
     { href: "/perfil", label: "Perfil", icon: <User className="h-5 w-5" /> },
   ],
   [UserRole.MARMITARIA]: [
-    { href: "/marmitaria", label: "Início", icon: <Home className="h-5 w-5" /> },
-    { href: "/marmitaria/cardapio", label: "Cardápio", icon: <BookOpen className="h-5 w-5" /> },
-    { href: "/marmitaria/pedidos", label: "Pedidos", icon: <Utensils className="h-5 w-5" /> },
-    { href: "/marmitaria/financeiro", label: "Financeiro", icon: <CreditCard className="h-5 w-5" /> },
-    { href: "/perfil", label: "Conta", icon: <User className="h-5 w-5" /> },
+    { href: "/marmitaria", label: "Painel", icon: <Home className="h-5 w-5" /> },
+    { href: "/marmitaria/entregas", label: "Entregas", icon: <Utensils className="h-5 w-5" /> },
+    { href: "/marmitaria/saldo", label: "Saldo", icon: <CreditCard className="h-5 w-5" /> },
+    { href: "/marmitaria/pagamentos", label: "Pagamentos", icon: <History className="h-5 w-5" /> },
+    { href: "/marmitaria/config", label: "Config", icon: <User className="h-5 w-5" /> },
   ],
 }
 

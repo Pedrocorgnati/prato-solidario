@@ -1,0 +1,66 @@
+/**
+ * POST /api/v1/internal/donations/expire-warning
+ * Cron interno: envia push ao doador 30min antes da janela de doação expirar.
+ * Protegido por CRON_SECRET no header Authorization.
+ *
+ * O cron deve chamar este endpoint com os donationIds que expiram em ~30min.
+ * Filtra doações com extensionCount < 2 para não enviar push desnecessário.
+ *
+ * @see intake-review/TASK-2/ST002 — gap CL-086
+ */
+
+import { NextResponse, type NextRequest } from 'next/server'
+import { z } from 'zod'
+import { env } from '@/lib/env'
+import { notificationService } from '@/services/notification.service'
+
+const bodySchema = z.object({
+  donationIds: z
+    .array(z.string().uuid())
+    .min(1, 'Informe ao menos 1 donationId.')
+    .max(200, 'Máximo 200 donationIds por requisição.'),
+})
+
+export async function POST(request: NextRequest) {
+  // 1. Autenticar via CRON_SECRET
+  const authHeader = request.headers.get('authorization')
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
+
+  if (!token || token !== env.CRON_SECRET) {
+    return NextResponse.json({ error: 'AUTH_001', message: 'Não autorizado.' }, { status: 401 })
+  }
+
+  // 2. Validar body
+  let body: unknown
+  try {
+    body = await request.json()
+  } catch {
+    return NextResponse.json({ error: 'VAL_001', message: 'Body inválido.' }, { status: 400 })
+  }
+
+  const parsed = bodySchema.safeParse(body)
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: 'VAL_001', message: parsed.error.issues[0]?.message ?? 'Dados inválidos.' },
+      { status: 400 }
+    )
+  }
+
+  const { donationIds } = parsed.data
+
+  // 3. Processar cada doação — erros de push não abortam o batch
+  let sent = 0
+  let errors = 0
+
+  for (const donationId of donationIds) {
+    try {
+      await notificationService.sendDonationWindowWarningToDonor(donationId)
+      sent++
+    } catch (err) {
+      console.error(`[donations/expire-warning] Erro donationId=${donationId}:`, err)
+      errors++
+    }
+  }
+
+  return NextResponse.json({ sent, errors, total: donationIds.length })
+}

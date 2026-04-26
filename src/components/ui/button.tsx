@@ -43,6 +43,18 @@ export interface ButtonProps
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, children, ...props }, ref) => {
+    // A11y guard (intake-review TASK-4/ST003): botao icon-only precisa de aria-label
+    if (
+      process.env.NODE_ENV !== 'production' &&
+      size === 'icon' &&
+      !props['aria-label'] &&
+      !props['aria-labelledby']
+    ) {
+      console.warn(
+        '[a11y] <Button size="icon"> sem aria-label. Forneça aria-label descritivo para usuarios de leitor de tela.',
+      )
+    }
+
     if (asChild && React.isValidElement(children)) {
       return React.cloneElement(children as React.ReactElement<{ className?: string }>, {
         className: cn(

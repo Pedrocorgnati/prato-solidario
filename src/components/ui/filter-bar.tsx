@@ -32,7 +32,7 @@ export function FilterBar({
   return (
     <div className={cn("flex flex-col gap-3 sm:flex-row sm:items-center", className)}>
       {onSearchChange !== undefined && (
-        <div className="relative flex-1">
+        <div className="relative flex-1" role="search">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text-muted)]" />
           <Input
             value={search}

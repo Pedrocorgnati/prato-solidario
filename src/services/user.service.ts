@@ -34,12 +34,12 @@ export class UserService {
   }
 
   async createDonorPF(dto: CreateDonorPFInput, ipAddress?: string): Promise<User> {
-    const authId = await this.createAuthUser(dto.email, dto.password, 'DONOR_INDIVIDUAL')
+    const authId = await this.createAuthUser(dto.email, dto.password, 'DOADOR_PF')
     const now = new Date()
     const user = await userRepository.create({
       id: authId,
       email: dto.email,
-      role: 'DONOR_INDIVIDUAL',
+      role: 'DOADOR_PF',
       name: dto.name,
       phone: dto.phone,
       termsAcceptedAt: now,
@@ -49,19 +49,19 @@ export class UserService {
     await auditLogRepository.log('USER_CREATED', 'User', {
       userId: user.id,
       entityId: user.id,
-      metadata: { role: 'DONOR_INDIVIDUAL' },
+      metadata: { role: 'DOADOR_PF' },
       ipAddress,
     })
     return user
   }
 
   async createDonorRestaurant(dto: CreateDonorRestaurantInput, ipAddress?: string): Promise<User> {
-    const authId = await this.createAuthUser(dto.email, dto.password, 'DONOR_RESTAURANT')
+    const authId = await this.createAuthUser(dto.email, dto.password, 'DOADOR_RESTAURANTE')
     const now = new Date()
     const user = await userRepository.create({
       id: authId,
       email: dto.email,
-      role: 'DONOR_RESTAURANT',
+      role: 'DOADOR_RESTAURANTE',
       name: dto.name,
       phone: dto.phone,
       document: dto.document.replace(/\D/g, ''),
@@ -87,19 +87,19 @@ export class UserService {
     await auditLogRepository.log('USER_CREATED', 'User', {
       userId: user.id,
       entityId: user.id,
-      metadata: { role: 'DONOR_RESTAURANT' },
+      metadata: { role: 'DOADOR_RESTAURANTE' },
       ipAddress,
     })
     return user
   }
 
   async createMarmitaria(dto: CreateMarmitariaInput, ipAddress?: string): Promise<User> {
-    const authId = await this.createAuthUser(dto.email, dto.password, 'MARMITARIA_PARTNER')
+    const authId = await this.createAuthUser(dto.email, dto.password, 'MARMITARIA')
     const now = new Date()
     const user = await userRepository.create({
       id: authId,
       email: dto.email,
-      role: 'MARMITARIA_PARTNER',
+      role: 'MARMITARIA',
       name: dto.name,
       phone: dto.phone,
       document: dto.document.replace(/\D/g, ''),
@@ -126,19 +126,19 @@ export class UserService {
     await auditLogRepository.log('USER_CREATED', 'User', {
       userId: user.id,
       entityId: user.id,
-      metadata: { role: 'MARMITARIA_PARTNER', marmitariaStatus: 'PENDING_APPROVAL' },
+      metadata: { role: 'MARMITARIA', marmitariaStatus: 'PENDING_APPROVAL' },
       ipAddress,
     })
     return user
   }
 
   async createONG(dto: CreateONGInput, ipAddress?: string): Promise<User> {
-    const authId = await this.createAuthUser(dto.email, dto.password, 'ONG_AGENT')
+    const authId = await this.createAuthUser(dto.email, dto.password, 'ONG')
     const now = new Date()
     const user = await userRepository.create({
       id: authId,
       email: dto.email,
-      role: 'ONG_AGENT',
+      role: 'ONG',
       name: dto.name,
       document: dto.document.replace(/\D/g, ''),
       documentType: dto.document.replace(/\D/g, '').length === 11 ? 'CPF' : 'CNPJ',
@@ -150,7 +150,7 @@ export class UserService {
     await auditLogRepository.log('USER_CREATED', 'User', {
       userId: user.id,
       entityId: user.id,
-      metadata: { role: 'ONG_AGENT' },
+      metadata: { role: 'ONG' },
       ipAddress,
     })
     return user
@@ -178,12 +178,12 @@ export class UserService {
   }
 
   async createSponsor(dto: CreateSponsorInput, ipAddress?: string): Promise<User> {
-    const authId = await this.createAuthUser(dto.email, dto.password, 'SPONSOR')
+    const authId = await this.createAuthUser(dto.email, dto.password, 'PATROCINADOR')
     const now = new Date()
     const user = await userRepository.create({
       id: authId,
       email: dto.email,
-      role: 'SPONSOR',
+      role: 'PATROCINADOR',
       name: dto.name,
       termsAcceptedAt: now,
       privacyAcceptedAt: now,
@@ -192,7 +192,7 @@ export class UserService {
     await auditLogRepository.log('USER_CREATED', 'User', {
       userId: user.id,
       entityId: user.id,
-      metadata: { role: 'SPONSOR' },
+      metadata: { role: 'PATROCINADOR' },
       ipAddress,
     })
     return user

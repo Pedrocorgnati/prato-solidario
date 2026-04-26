@@ -37,6 +37,14 @@ export const RATE_001 = { code: 'RATE_LOGIN', status: 429, message: 'Limite de t
 export const RATE_002 = { code: 'RATE_REGISTER', status: 429, message: 'Limite de cadastros atingido. Tente em 1 hora.' }
 export const RATE_003 = { code: 'RATE_PASSWORD_RESET', status: 429, message: 'Limite de redefinições atingido. Tente em 1 hora.' }
 export const RATE_004 = { code: 'RATE_PUSH_TOKEN', status: 429, message: 'Limite de registros de token atingido. Tente em 1 minuto.' }
+export const RATE_050 = { code: 'RATE_CODE_LIMIT', status: 200, message: 'Você já possui um código ativo. Use-o antes de solicitar outro.' }
+
+// ---------------------------------------------------------------------------
+// RETRIEVAL — Códigos de Retirada (module-9)
+// ---------------------------------------------------------------------------
+export const SYS_050 = { code: 'SYS_CODE_ALREADY_CONFIRMED', status: 409, message: 'Este código já foi confirmado.' }
+export const SYS_051 = { code: 'SYS_CODE_EXPIRED', status: 410, message: 'Este código já expirou.' }
+export const SYS_080 = { code: 'SYS_DONATION_NOT_FOUND', status: 404, message: 'Doação não encontrada.' }
 
 // ---------------------------------------------------------------------------
 // USER — Usuário
@@ -62,6 +70,25 @@ export const GEO_004 = { code: 'GEO_INVALID_CEP', status: 422, message: 'CEP dev
 // ---------------------------------------------------------------------------
 export const PUSH_001 = { code: 'PUSH_TOKEN_NOT_FOUND', status: 404, message: 'Token de push não encontrado.' }
 export const PUSH_002 = { code: 'PUSH_INVALID_TOKEN', status: 422, message: 'Token de push inválido.' }
+
+// ---------------------------------------------------------------------------
+// BAN — Banner System (module-17)
+// ---------------------------------------------------------------------------
+export const BAN_001 = { code: 'BAN_001', status: 422, message: 'Saldo insuficiente de dias de banner.' }
+export const BAN_002 = { code: 'BAN_002', status: 403, message: 'Acesso restrito a restaurantes doadores.' }
+export const BAN_003 = { code: 'BAN_003', status: 404, message: 'Campanha de banner não encontrada.' }
+export const BAN_004 = { code: 'BAN_004', status: 409, message: 'Campanha não pode ser alterada neste estado.' }
+export const BAN_005 = { code: 'BAN_005', status: 400, message: 'Parâmetro position é obrigatório.' }
+
+// ---------------------------------------------------------------------------
+// MP — MercadoPago Connect (module-12)
+// ---------------------------------------------------------------------------
+export const MP_001 = { code: 'MP_UNAUTHENTICATED', status: 401, message: 'Sessão inválida ou ausente.' }
+export const MP_002 = { code: 'MP_CSRF_INVALID', status: 400, message: 'Estado OAuth inválido ou expirado. Inicie o processo novamente.' }
+export const MP_003 = { code: 'MP_ROLE_FORBIDDEN', status: 403, message: 'Apenas marmitarias podem conectar o Mercado Pago.' }
+export const MP_004 = { code: 'MP_TOKEN_ERROR', status: 502, message: 'Falha ao obter tokens do Mercado Pago.' }
+export const MP_005 = { code: 'MP_WEBHOOK_INVALID_SIGNATURE', status: 401, message: 'Assinatura de webhook inválida.' }
+export const MP_006 = { code: 'MP_NOT_CONNECTED', status: 422, message: 'Marmitaria não possui conexão MP ativa.' }
 
 // ---------------------------------------------------------------------------
 // Helper

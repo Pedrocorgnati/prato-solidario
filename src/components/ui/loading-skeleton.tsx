@@ -13,7 +13,7 @@ export function LoadingSkeleton({
   className,
 }: LoadingSkeletonProps) {
   return (
-    <div className={cn("space-y-3", className)}>
+    <div className={cn("space-y-3", className)} aria-busy="true" aria-label="Carregando...">
       {Array.from({ length: count }).map((_, i) => (
         <SkeletonItem key={i} variant={variant} />
       ))}

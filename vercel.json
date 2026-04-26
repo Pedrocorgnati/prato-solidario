@@ -1,0 +1,12 @@
+{
+  "crons": [
+    { "path": "/api/v1/internal/crons/expire-donations",  "schedule": "*/5 * * * *"  },
+    { "path": "/api/v1/internal/crons/expire-warning",    "schedule": "*/5 * * * *"  },
+    { "path": "/api/v1/internal/crons/calculate-metrics", "schedule": "*/15 * * * *" },
+    { "path": "/api/v1/internal/crons/calculate-badges",  "schedule": "0 2 1 * *"    },
+    { "path": "/api/v1/internal/crons/generate-diplomas", "schedule": "0 3 1 1 *"    },
+    { "path": "/api/v1/internal/crons/lgpd-cleanup",      "schedule": "0 3 * * *"    },
+    { "path": "/api/v1/internal/crons/refresh-mp-tokens", "schedule": "0 */6 * * *"  },
+    { "path": "/api/v1/internal/crons/abuse-cleanup",     "schedule": "0 4 * * 0"    }
+  ]
+}

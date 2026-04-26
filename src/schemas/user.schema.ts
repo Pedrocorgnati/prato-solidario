@@ -1,9 +1,10 @@
 import { z } from 'zod'
 import { addressSchema } from './address.schema'
-import { validateCPF, validateCNPJ } from '@/lib/validations'
+import { isValidCpf } from '@/validators/cpf'
+import { isValidCnpj } from '@/validators/cnpj'
 
 const documentSchema = z.string().refine(
-  (v) => validateCPF(v.replace(/\D/g, '')) || validateCNPJ(v.replace(/\D/g, '')),
+  (v) => isValidCpf(v.replace(/\D/g, '')) || isValidCnpj(v.replace(/\D/g, '')),
   'Documento inválido. Verifique os números.'
 )
 

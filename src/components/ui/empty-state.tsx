@@ -22,6 +22,7 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <div
+      role="status"
       className={cn(
         "flex flex-col items-center justify-center gap-4 py-16 px-4 text-center",
         className

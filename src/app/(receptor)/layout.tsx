@@ -1,10 +1,26 @@
+"use client"
+export const dynamic = 'force-dynamic'
+
+import { useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { ROUTES, UserRole } from "@/lib/constants"
 import { BottomNav } from "@/components/shared/bottom-nav"
 import { Button } from "@/components/ui/button"
+import { useAuth } from "@/hooks/useAuth"
 
 export default function ReceptorLayout({ children }: { children: React.ReactNode }) {
+  const { signOut } = useAuth()
+
+  // Registrar Service Worker para cache-first em /retirar e /meus-codigos
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('/sw.js', { scope: '/' })
+        .catch((err) => console.warn('[SW] Registro falhou:', err))
+    }
+  }, [])
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="flex h-14 items-center justify-between border-b border-[var(--color-border-raw)] px-4">
@@ -24,8 +40,8 @@ export default function ReceptorLayout({ children }: { children: React.ReactNode
             className="h-7 w-auto"
           />
         </Link>
-        <Button variant="ghost" size="sm" asChild>
-          <Link href={ROUTES.LOGIN}>Sair</Link>
+        <Button variant="ghost" size="sm" onClick={() => signOut()}>
+          Sair
         </Button>
       </header>
       <main id="main" className="flex-1 pb-20">

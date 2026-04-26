@@ -1,9 +1,12 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Plus_Jakarta_Sans } from "next/font/google"
 import "./globals.css"
 import { Toaster } from "sonner"
 import { ThemeProvider } from "@/components/shared/theme-provider"
+import { AuthProvider } from "@/components/providers/AuthProvider"
 import { DevToolsLoader } from "@/components/dev/DevToolsLoader"
+import { SkipLinks } from "@/components/shared/skip-links"
+import { OfflineBanner } from "@/components/shared/offline-banner"
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta-sans",
@@ -12,7 +15,10 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 })
 
 export const metadata: Metadata = {
-  title: "Prato Solidário — Transforme seu excedente em solidariedade",
+  title: {
+    template: "%s | Prato Solidário",
+    default: "Prato Solidário — Transforme seu excedente em solidariedade",
+  },
   description:
     "Conectamos doadores de alimentos com receptores que precisam de refeições. Junte-se à corrente do bem.",
   openGraph: {
@@ -22,6 +28,12 @@ export const metadata: Metadata = {
     locale: "pt_BR",
     type: "website",
   },
+}
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#2D8659",
 }
 
 export default function RootLayout({
@@ -37,16 +49,15 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <ThemeProvider>
-          <a
-            href="#main"
-            className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-white focus:rounded-md"
-          >
-            Ir para conteúdo
-          </a>
-          {children}
+          <AuthProvider>
+            <SkipLinks />
+            <OfflineBanner />
+            {children}
+          </AuthProvider>
           <DevToolsLoader />
           <Toaster
             position="top-right"
+            richColors
             toastOptions={{
               classNames: {
                 toast: "font-sans",

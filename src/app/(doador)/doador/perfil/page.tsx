@@ -1,4 +1,5 @@
 "use client"
+export const dynamic = 'force-dynamic'
 
 import * as React from "react"
 import { Input } from "@/components/ui/input"
@@ -8,7 +9,7 @@ import { PhotoUpload } from "@/components/shared/photo-upload"
 import { PhoneInput } from "@/components/shared/phone-input"
 import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
-import { updateProfile } from "@/actions/users"
+import { updateProfileAction } from "@/app/(auth)/conta/perfil/actions"
 
 export default function PerfilDoadorPage() {
   const [loading, setLoading] = React.useState(false)
@@ -17,8 +18,12 @@ export default function PerfilDoadorPage() {
   async function handleSave() {
     setLoading(true)
     try {
-      await updateProfile({ phone })
-      toast.success("Perfil atualizado!")
+      const result = await updateProfileAction({ phone })
+      if (result.success) {
+        toast.success("Perfil atualizado!")
+      } else {
+        toast.error(result.error ?? "Erro ao atualizar perfil.")
+      }
     } catch {
       toast.error("Erro ao atualizar perfil.")
     } finally {

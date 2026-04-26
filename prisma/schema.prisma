@@ -2,12 +2,13 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  extensions = [postgis]
 }
 
 // ---------------------------------------------------------------------------
@@ -15,12 +16,12 @@ datasource db {
 // ---------------------------------------------------------------------------
 
 enum UserRole {
-  DONOR_INDIVIDUAL
-  DONOR_RESTAURANT
-  MARMITARIA_PARTNER
+  DOADOR_PF
+  DOADOR_RESTAURANTE
+  MARMITARIA
   RECEPTOR
-  ONG_AGENT
-  SPONSOR
+  ONG
+  PATROCINADOR
   ADMIN
 }
 
@@ -32,8 +33,9 @@ enum DocumentType {
 enum MarmitariaStatus {
   PENDING_APPROVAL
   ACTIVE
+  PAUSED
   SUSPENDED
-  REJECTED
+  INACTIVE
 }
 
 enum Platform {
@@ -43,23 +45,24 @@ enum Platform {
 }
 
 enum DonationStatus {
-  ACTIVE
-  PARTIALLY_ALLOCATED
-  FULLY_ALLOCATED
+  PENDING
+  AVAILABLE
+  RESERVED
   COMPLETED
   EXPIRED
   CANCELLED
 }
 
 enum DonationType {
-  CONVENTIONAL
+  REGULAR
   SPONSORED
 }
 
-enum CodeStatus {
+enum RetrievalCodeStatus {
   ACTIVE
   CONFIRMED
   EXPIRED
+  CANCELLED
 }
 
 enum CodeType {
@@ -75,9 +78,29 @@ enum BlockLevel {
 }
 
 enum BannerStatus {
+  DRAFT
   ACTIVE
   PAUSED
   SCHEDULED
+  COMPLETED
+  REJECTED
+}
+
+enum BannerType {
+  PAID
+  FREE_RESTAURANT
+  PERMUTA
+}
+
+enum BannerPosition {
+  TOP
+  SIDEBAR
+  INLINE
+}
+
+enum BannerCreditType {
+  EARNED
+  USED
   EXPIRED
 }
 
@@ -89,9 +112,70 @@ enum NotificationType {
 }
 
 enum IncidentType {
-  DONOR_ABSENT
-  SUSPICIOUS_RECEPTOR
-  MULTIPLE_NO_SHOW
+  ABUSE
+  FRAUD
+  QUALITY
+  NO_SHOW
+  OTHER
+}
+
+enum ConsentVersion {
+  V1
+  V2
+}
+
+enum AdminActionType {
+  APPROVE
+  REJECT
+  SUSPEND
+  UNBLOCK
+  WARN
+  DELETE
+}
+
+enum MPConnectionStatus {
+  CONNECTED
+  NEEDS_RECONNECT
+  DISCONNECTED
+}
+
+// module-13: Sponsor Checkout enums
+enum PaymentMethod {
+  PIX
+  CREDIT_CARD
+  DEBIT_CARD
+}
+
+enum PurchaseStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  REFUNDED
+}
+
+enum SponsoredMealStatus {
+  AVAILABLE
+  RESERVED
+  DELIVERED
+}
+
+// module-intake-review TASK-6: tipo de alimento estruturado
+enum FoodType {
+  REFEICAO_COMPLETA
+  PORCAO
+  LANCHE
+  SOBREMESA
+  BEBIDA
+  OUTROS
+}
+
+// module-20: tipos de badge para gamificação
+enum BadgeType {
+  PRIMEIRA_DOACAO
+  DOADOR_FREQUENTE
+  HEROI_DO_MES
+  CENTURIAO
+  MESTRE
 }
 
 // ---------------------------------------------------------------------------
@@ -117,12 +201,31 @@ model User {
   emailVerified        Boolean           @default(false) @map("email_verified")
   isActive             Boolean           @default(true) @map("is_active")
   deletedAt            DateTime?         @map("deleted_at") @db.Timestamptz
+  anonymizedAt         DateTime?         @map("anonymized_at") @db.Timestamptz
   createdAt            DateTime          @default(now()) @map("created_at") @db.Timestamptz
   updatedAt            DateTime          @updatedAt @map("updated_at") @db.Timestamptz
 
-  addresses  Address[]
-  pushTokens PushToken[]
-  auditLogs  AuditLog[]
+  addresses           Address[]
+  pushTokens          PushToken[]
+  auditLogs           AuditLog[]
+  donorProfile        DonorProfile?       @relation("DonorProfileToUser")
+  restaurantProfile   RestaurantProfile?  @relation("RestaurantProfileToUser")
+  receptorProfile     ReceptorProfile?    @relation("ReceptorProfileToUser")
+  ongProfile          OngProfile?         @relation("OngProfileToUser")
+  marmitariaProfile   MarmitariaProfile?  @relation("MarmitariaProfileToUser")
+  sponsorProfile      SponsorProfile?     @relation("SponsorProfileToUser")
+  donations           Donation[]          @relation("DonationToUser")
+  retrievalCodes      RetrievalCode[]     @relation("RetrievalCodeToUser")
+  adminActions        AdminAction[]       @relation("AdminActionToUser")
+  consentLogs         ConsentLog[]        @relation("ConsentLogToUser")
+  notificationPreferences NotificationPreferences? @relation("NotificationPreferencesToUser")
+  dataExportRequests  DataExportRequest[] @relation("DataExportToUser")
+  hallOfFame          Boolean             @default(false) @map("hall_of_fame")
+  adminAlerts         AdminAlert[]        @relation("AdminAlertToUser")
+  badges              Badge[]             @relation("BadgeToUser")
+  diplomas            Diploma[]           @relation("DiplomaToUser")
+  bannerCampaigns     BannerCampaign[]    @relation("BannerCampaignToAdvertiser")
+  bannerCredit        BannerCredit?       @relation("BannerCreditToUser")
 
   @@index([role], name: "IDX_users_role")
   @@index([isActive], name: "IDX_users_is_active")
@@ -169,6 +272,19 @@ model PushToken {
   @@map("push_tokens")
 }
 
+model AdminTwoFactor {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String    @unique @map("user_id") @db.Uuid
+  secret           String    @db.VarChar(64)
+  enrolledAt       DateTime? @map("enrolled_at") @db.Timestamptz
+  backupCodesHash  String[]  @map("backup_codes_hash")
+  lastUsedStep     BigInt?   @map("last_used_step")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@map("admin_two_factor")
+}
+
 model AuditLog {
   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   userId     String?  @map("user_id") @db.Uuid
@@ -186,4 +302,496 @@ model AuditLog {
   @@index([createdAt], name: "IDX_audit_logs_created_at")
   @@index([entityType, entityId], name: "IDX_audit_logs_entity")
   @@map("audit_logs")
+}
+
+// ---------------------------------------------------------------------------
+// PERFIS DE PAPEL
+// ---------------------------------------------------------------------------
+
+model DonorProfile {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String   @unique @map("user_id") @db.Uuid
+  preferredTimes Json?    @map("preferred_times")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation("DonorProfileToUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("donor_profiles")
+}
+
+model RestaurantProfile {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String   @unique @map("user_id") @db.Uuid
+  tradeName        String   @map("trade_name") @db.VarChar(255)
+  cnpj             String   @unique @db.VarChar(14)
+  averagePortions  Int?     @map("average_portions")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation("RestaurantProfileToUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("restaurant_profiles")
+}
+
+model ReceptorProfile {
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String     @unique @map("user_id") @db.Uuid
+  familySize     Int?       @map("family_size")
+  blockLevel     BlockLevel @default(NONE) @map("block_level")
+  blockedUntil   DateTime?  @map("blocked_until") @db.Timestamptz
+  createdAt      DateTime   @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime   @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation("ReceptorProfileToUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("receptor_profiles")
+}
+
+model OngProfile {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String   @unique @map("user_id") @db.Uuid
+  cnpj           String   @unique @db.VarChar(14)
+  registrationNo String?  @map("registration_no") @db.VarChar(50)
+  areaAtuacao    String?  @map("area_atuacao") @db.VarChar(100)
+  descricao      String?  @db.Text
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation("OngProfileToUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ong_profiles")
+}
+
+model MarmitariaProfile {
+  id               String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String           @unique @map("user_id") @db.Uuid
+  tradeName        String           @map("trade_name") @db.VarChar(255)
+  cnpj             String           @unique @db.VarChar(14)
+  status           MarmitariaStatus @default(PENDING_APPROVAL)
+  pricePerMeal     Decimal?         @map("price_per_meal") @db.Decimal(10, 2)
+  schedule         Json?
+  pausedAt         DateTime?        @map("paused_at") @db.Timestamptz
+  createdAt        DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime         @updatedAt @map("updated_at") @db.Timestamptz
+
+  user         User               @relation("MarmitariaProfileToUser", fields: [userId], references: [id], onDelete: Cascade)
+  balance      MarmitariaBalance?
+  mpConnection MPConnection?
+  purchases    SponsorPurchase[]
+
+  @@index([status], name: "IDX_marmitaria_profiles_status")
+  @@map("marmitaria_profiles")
+}
+
+model SponsorProfile {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId             String   @unique @map("user_id") @db.Uuid
+  companyName        String?  @map("company_name") @db.VarChar(255)
+  cnpj               String?  @unique @db.VarChar(14)
+  companyDescription String?  @map("company_description") @db.Text
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user      User              @relation("SponsorProfileToUser", fields: [userId], references: [id], onDelete: Cascade)
+  purchases SponsorPurchase[]
+
+  @@map("sponsor_profiles")
+}
+
+// ---------------------------------------------------------------------------
+// CORE DE NEGOCIO
+// ---------------------------------------------------------------------------
+
+model Donation {
+  id                String                                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  donorId           String                                  @map("donor_id") @db.Uuid
+  type              DonationType                            @default(REGULAR)
+  status            DonationStatus                          @default(PENDING)
+  description       String                                  @db.Text
+  foodType          FoodType                                @default(OUTROS) @map("food_type")
+  portions          Int
+  remainingPortions Int                                     @default(0) @map("remaining_portions")
+  location          Unsupported("geography(Point, 4326)")?
+  radiusKm          Float                                   @default(5) @map("radius_km")
+  windowStart       DateTime                                @map("window_start") @db.Timestamptz
+  windowEnd         DateTime                                @map("window_end") @db.Timestamptz
+  extensionCount    Int                                     @default(0) @map("extension_count")
+  photoUrl          String?                                 @map("photo_url")
+  deletedAt         DateTime?                               @map("deleted_at") @db.Timestamptz
+  createdAt         DateTime                                @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime                                @updatedAt @map("updated_at") @db.Timestamptz
+
+  donor          User             @relation("DonationToUser", fields: [donorId], references: [id], onDelete: Cascade)
+  retrievalCodes RetrievalCode[]
+  sponsoredMeals SponsoredMeal[]
+
+  @@index([status], name: "IDX_donations_status")
+  @@index([donorId], name: "IDX_donations_donor_id")
+  @@index([windowEnd], name: "IDX_donations_window_end")
+  @@map("donations")
+}
+
+model RetrievalCode {
+  id          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  donationId  String              @map("donation_id") @db.Uuid
+  receptorId  String?             @map("receptor_id") @db.Uuid
+  code        String              @unique @db.VarChar(20)
+  type        CodeType            @default(INDIVIDUAL)
+  status      RetrievalCodeStatus @default(ACTIVE)
+  portions    Int                 @default(1)
+  confirmedAt   DateTime?           @map("confirmed_at") @db.Timestamptz
+  expiresAt     DateTime            @map("expires_at") @db.Timestamptz
+  graceUntil    DateTime?           @map("grace_until") @db.Timestamptz
+  warningSentAt DateTime?           @map("warning_sent_at") @db.Timestamptz
+  createdAt     DateTime            @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime            @updatedAt @map("updated_at") @db.Timestamptz
+
+  donation Donation @relation(fields: [donationId], references: [id], onDelete: Cascade)
+  receptor User?    @relation("RetrievalCodeToUser", fields: [receptorId], references: [id], onDelete: SetNull)
+
+  @@index([donationId], name: "IDX_retrieval_codes_donation_id")
+  @@index([status], name: "IDX_retrieval_codes_status")
+  @@index([code], name: "IDX_retrieval_codes_code")
+  @@index([expiresAt], name: "IDX_retrieval_codes_expires_at")
+  @@index([receptorId, status], name: "IDX_retrieval_codes_receptor_status")
+  @@map("retrieval_codes")
+}
+
+// ---------------------------------------------------------------------------
+// ANTI-ABUSO
+// ---------------------------------------------------------------------------
+
+model AbuseRecord {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ipAddress    String    @map("ip_address") @db.VarChar(45)
+  fingerprint  String?   @db.VarChar(64)
+  userId       String?   @map("user_id") @db.Uuid
+  blockedUntil DateTime? @map("blocked_until") @db.Timestamptz
+  blockCount   Int       @default(0) @map("block_count")
+  reason       String?   @db.VarChar(255)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  @@index([ipAddress], name: "IDX_abuse_records_ip")
+  @@index([fingerprint], name: "IDX_abuse_records_fingerprint")
+  @@index([userId], name: "IDX_abuse_records_user_id")
+  @@index([blockedUntil], name: "IDX_abuse_records_blocked_until")
+  @@map("abuse_records")
+}
+
+// ---------------------------------------------------------------------------
+// PATROCINIO E MARMITARIA
+// ---------------------------------------------------------------------------
+
+model SponsoredMeal {
+  id           String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  purchaseId   String              @map("purchase_id") @db.Uuid
+  donationId   String?             @map("donation_id") @db.Uuid
+  marmitariaId String?             @map("marmitaria_id") @db.Uuid
+  status       SponsoredMealStatus @default(AVAILABLE)
+  expiresAt    DateTime?           @map("expires_at") @db.Timestamptz // NULL = sem expiração (INT-100)
+  createdAt    DateTime            @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime            @updatedAt @map("updated_at") @db.Timestamptz
+
+  purchase SponsorPurchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  donation Donation?       @relation(fields: [donationId], references: [id], onDelete: SetNull)
+
+  @@index([marmitariaId, status])
+  @@map("sponsored_meals")
+}
+
+model SponsorPurchase {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sponsorId       String?        @map("sponsor_id") @db.Uuid          // null = guest checkout (INT-034)
+  guestEmail      String?        @map("guest_email") @db.VarChar(255) // obrigatório quando sponsorId é null
+  marmitariaId    String         @map("marmitaria_id") @db.Uuid
+  quantity        Int
+  unitPrice       Decimal        @map("unit_price") @db.Decimal(10, 2)
+  totalAmount     Decimal        @map("total_amount") @db.Decimal(10, 2)
+  paymentMethod   PaymentMethod  @default(PIX) @map("payment_method")
+  paymentStatus   PurchaseStatus @default(PENDING) @map("payment_status")
+  mpPaymentId     String?        @unique @map("mp_payment_id") @db.VarChar(100)
+  createdAt       DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime       @updatedAt @map("updated_at") @db.Timestamptz
+
+  sponsor        SponsorProfile?   @relation(fields: [sponsorId], references: [id], onDelete: SetNull)
+  marmitaria     MarmitariaProfile @relation(fields: [marmitariaId], references: [id], onDelete: Restrict)
+  sponsoredMeals SponsoredMeal[]
+
+  @@index([sponsorId], name: "IDX_sponsor_purchases_sponsor_id")
+  @@index([marmitariaId], name: "IDX_sponsor_purchases_marmitaria_id")
+  @@map("sponsor_purchases")
+}
+
+model MarmitariaBalance {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  marmitariaId     String   @unique @map("marmitaria_id") @db.Uuid
+  availableCredits Int      @default(0) @map("available_credits")
+  totalEarned      Decimal  @default(0) @map("total_earned") @db.Decimal(12, 2)
+  totalWithdrawn   Decimal  @default(0) @map("total_withdrawn") @db.Decimal(12, 2)
+  updatedAt        DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  marmitaria MarmitariaProfile @relation(fields: [marmitariaId], references: [id], onDelete: Cascade)
+
+  @@map("marmitaria_balances")
+}
+
+model MPConnection {
+  id                     String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  marmitariaId           String              @unique @map("marmitaria_id") @db.Uuid
+  mpUserId               String?             @map("mp_user_id") @db.VarChar(100)
+  // Tokens criptografados com AES-256-GCM — formato: "iv:authTag:encrypted" em hex
+  accessTokenEncrypted   String?             @map("access_token_encrypted") @db.Text
+  refreshTokenEncrypted  String?             @map("refresh_token_encrypted") @db.Text
+  publicKey              String?             @map("public_key") @db.VarChar(255)
+  liveMode               Boolean             @default(false) @map("live_mode")
+  expiresAt              DateTime?           @map("expires_at") @db.Timestamptz
+  status                 MPConnectionStatus  @default(CONNECTED) @map("status")
+  createdAt              DateTime            @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt              DateTime            @updatedAt @map("updated_at") @db.Timestamptz
+
+  marmitaria MarmitariaProfile @relation(fields: [marmitariaId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt], name: "mp_connections_expires_at_idx")
+  @@index([status], name: "mp_connections_status_idx")
+  @@map("mp_connections")
+}
+
+model ProcessedWebhook {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  paymentId   String   @unique @map("payment_id") @db.VarChar(255)
+  provider    String   @db.VarChar(50)
+  action      String   @db.VarChar(100)
+  processedAt DateTime @default(now()) @map("processed_at") @db.Timestamptz
+
+  @@index([paymentId], name: "processed_webhooks_payment_id_idx")
+  @@map("processed_webhooks")
+}
+
+// ---------------------------------------------------------------------------
+// BANNER E ADMIN
+// ---------------------------------------------------------------------------
+
+model BannerCampaign {
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title             String         @db.VarChar(255)
+  type              BannerType     @default(PAID)
+  advertiserId      String?        @map("advertiser_id") @db.Uuid
+  imageUrl          String         @map("image_url") @db.Text
+  linkUrl           String?        @map("link_url") @db.Text
+  position          BannerPosition @default(TOP)
+  status            BannerStatus   @default(DRAFT)
+  priority          Int            @default(100)
+  permutaPartnerUrl String?        @map("permuta_partner_url") @db.Text
+  internalNote      String?        @map("internal_note") @db.Text
+  startDate         DateTime?      @map("start_date") @db.Timestamptz
+  endDate           DateTime?      @map("end_date") @db.Timestamptz
+  impressions       Int            @default(0)
+  clicks            Int            @default(0)
+  deletedAt         DateTime?      @map("deleted_at") @db.Timestamptz
+  createdAt         DateTime       @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime       @updatedAt @map("updated_at") @db.Timestamptz
+
+  advertiser      User?                 @relation("BannerCampaignToAdvertiser", fields: [advertiserId], references: [id], onDelete: SetNull)
+  creditHistories BannerCreditHistory[]
+
+  @@index([status], name: "IDX_banner_campaigns_status")
+  @@index([type], name: "IDX_banner_campaigns_type")
+  @@index([position, status], name: "IDX_banner_campaigns_position_status")
+  @@map("banner_campaigns")
+}
+
+model BannerCredit {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  restaurantId  String   @unique @map("restaurant_id") @db.Uuid
+  daysAvailable Int      @default(0) @map("days_available")
+  daysUsed      Int      @default(0) @map("days_used")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  restaurant User                  @relation("BannerCreditToUser", fields: [restaurantId], references: [id], onDelete: Cascade)
+  history    BannerCreditHistory[]
+
+  @@map("banner_credits")
+}
+
+model BannerCreditHistory {
+  id         String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  creditId   String           @map("credit_id") @db.Uuid
+  type       BannerCreditType
+  days       Int
+  donationId String?          @map("donation_id") @db.Uuid
+  campaignId String?          @map("campaign_id") @db.Uuid
+  createdAt  DateTime         @default(now()) @map("created_at") @db.Timestamptz
+
+  credit   BannerCredit    @relation(fields: [creditId], references: [id], onDelete: Cascade)
+  campaign BannerCampaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+
+  @@index([creditId], name: "IDX_banner_credit_history_credit_id")
+  @@index([donationId], name: "IDX_banner_credit_history_donation_id")
+  @@map("banner_credit_histories")
+}
+
+model AdminAction {
+  id        String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  adminId   String          @map("admin_id") @db.Uuid
+  targetId  String          @map("target_id") @db.Uuid
+  action    AdminActionType
+  reason    String?         @db.Text
+  metadata  Json?
+  createdAt DateTime        @default(now()) @map("created_at") @db.Timestamptz
+
+  admin User @relation("AdminActionToUser", fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId], name: "IDX_admin_actions_admin_id")
+  @@index([targetId], name: "IDX_admin_actions_target_id")
+  @@map("admin_actions")
+}
+
+// ---------------------------------------------------------------------------
+// ADMIN ALERTS — intake-review TASK-8 (CL-085)
+// ---------------------------------------------------------------------------
+
+model AdminAlert {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type      String   @db.VarChar(50) // REINCIDENCIA, REPORT_ESCALATED, etc.
+  userId    String   @map("user_id") @db.Uuid
+  message   String   @db.Text
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation("AdminAlertToUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([read], name: "IDX_admin_alerts_read")
+  @@index([userId], name: "IDX_admin_alerts_user_id")
+  @@index([createdAt], name: "IDX_admin_alerts_created_at")
+  @@map("admin_alerts")
+}
+
+// ---------------------------------------------------------------------------
+// LGPD
+// ---------------------------------------------------------------------------
+
+model ConsentLog {
+  id         String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String         @map("user_id") @db.Uuid
+  version    ConsentVersion
+  ipAddress  String?        @map("ip_address") @db.VarChar(45)
+  userAgent  String?        @map("user_agent") @db.Text
+  acceptedAt DateTime       @default(now()) @map("accepted_at") @db.Timestamptz
+
+  user User @relation("ConsentLogToUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], name: "IDX_consent_logs_user_id")
+  @@map("consent_logs")
+}
+
+model DataExportRequest {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  status      String    @default("PENDING") @db.VarChar(30)
+  fileUrl     String?   @map("file_url") @db.Text
+  requestedAt DateTime  @default(now()) @map("requested_at") @db.Timestamptz
+  completedAt DateTime? @map("completed_at") @db.Timestamptz
+
+  user User @relation("DataExportToUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId], name: "IDX_data_export_requests_user_id")
+  @@map("data_export_requests")
+}
+
+// ---------------------------------------------------------------------------
+// GAMIFICACAO E METRICAS
+// ---------------------------------------------------------------------------
+
+model ImpactMetrics {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  totalDonations   Int      @default(0) @map("total_donations")
+  totalPortions    Int      @default(0) @map("total_portions")
+  totalReceptors   Int      @default(0) @map("total_receptors")
+  totalDonors      Int      @default(0) @map("total_donors")
+  totalMarmitarias Int      @default(0) @map("total_marmitarias")
+  totalSponsored   Int      @default(0) @map("total_sponsored")
+  calculatedAt     DateTime @default(now()) @map("calculated_at") @db.Timestamptz
+
+  @@index([calculatedAt], name: "IDX_impact_metrics_calculated_at")
+  @@map("impact_metrics")
+}
+
+// module-20: badges de gamificação — tipados por enum, idempotentes por unique constraint
+model Badge {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  type      BadgeType
+  month     Int?      // 1-12 (apenas para badges mensais; null para cumulativos)
+  year      Int
+  awardedAt DateTime  @default(now()) @map("awarded_at") @db.Timestamptz
+
+  user User @relation("BadgeToUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type, month, year])
+  @@index([userId], name: "IDX_badges_user_id")
+  @@index([type, month, year], name: "IDX_badges_type_month_year")
+  @@map("badges")
+}
+
+// module-20: diplomas anuais armazenados no Supabase Storage (bucket 'diplomas')
+model Diploma {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String    @map("user_id") @db.Uuid
+  year        Int
+  storageUrl  String    @map("storage_url") @db.Text // URL pública do Supabase Storage (caminho interno)
+  signedUrl   String?   @map("signed_url") @db.Text  // URL assinada válida por 90 dias
+  signedUntil DateTime? @map("signed_until") @db.Timestamptz
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation("DiplomaToUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, year])
+  @@index([userId], name: "IDX_diplomas_user_id")
+  @@map("diplomas")
+}
+
+// ---------------------------------------------------------------------------
+// INTAKE-REVIEW P2+P3 — Preferencias LGPD, Tracking, Idempotencia
+// ---------------------------------------------------------------------------
+
+// TASK-5/ST001 — Preferencias granulares de notificacao/analytics/marketing
+model NotificationPreferences {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String   @unique @map("user_id") @db.Uuid
+  categories Json     @default("{}")
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation("NotificationPreferencesToUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
+}
+
+// TASK-9/ST003 — Tracking anonimo de compartilhamentos (Corrente do Bem)
+model ShareEvent {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  channel     String   @db.VarChar(30)
+  context     String   @db.VarChar(60)
+  anonymousId String?  @map("anonymous_id") @db.VarChar(64)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([channel], name: "IDX_share_events_channel")
+  @@index([createdAt], name: "IDX_share_events_created_at")
+  @@map("share_events")
+}
+
+// TASK-8/ST003 — Idempotencia persistida (substitui Map in-memory)
+model IdempotencyKey {
+  key        String   @id @db.VarChar(80)
+  response   Json
+  statusCode Int      @default(200) @map("status_code")
+  expiresAt  DateTime @map("expires_at") @db.Timestamptz
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([expiresAt], name: "IDX_idempotency_keys_expires_at")
+  @@map("idempotency_keys")
 }

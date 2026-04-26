@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
   const role = searchParams.get('role') ?? undefined
   const isActiveParam = searchParams.get('isActive')
   const isActive = isActiveParam !== null ? isActiveParam === 'true' : undefined
-  const marmitariaStatus = searchParams.get('marmitariaStatus') as 'PENDING_APPROVAL' | 'ACTIVE' | 'SUSPENDED' | 'REJECTED' | undefined ?? undefined
+  const marmitariaStatus = searchParams.get('marmitariaStatus') as 'PENDING_APPROVAL' | 'ACTIVE' | 'SUSPENDED' | 'INACTIVE' | undefined ?? undefined
 
   try {
     const { data, total } = await userRepository.findAll({ page, limit, role, isActive, marmitariaStatus })

@@ -30,6 +30,6 @@ export async function getUserById(_id: string) {
 //   const { data, error } = await supabase.storage.from('avatars').upload(path, file)
 //   const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
 export async function uploadPhoto(_formData: FormData): Promise<{ data: { url: string } | null; error: string | null }> {
-  // Stub: retorna null até Supabase Storage estar integrado
-  return { data: null, error: null }
+  // Upload de foto pendente de configuração do Supabase Storage (PENDING-ACTIONS.md)
+  return { data: null, error: 'Upload de foto indisponível no momento. Configure SUPABASE_SERVICE_ROLE_KEY e bucket "avatars".' }
 }

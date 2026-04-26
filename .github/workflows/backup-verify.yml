@@ -1,0 +1,18 @@
+name: Backup Verification
+
+on:
+  schedule:
+    - cron: '0 3 1 * *'  # 03:00 UTC, dia 1 de cada mes
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install psql
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Run verification script
+        env:
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+        run: bash scripts/verify-backup-restore.sh

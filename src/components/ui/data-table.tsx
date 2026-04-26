@@ -22,7 +22,7 @@ interface DataTableProps<T> {
   sortDirection?: "asc" | "desc"
 }
 
-export function DataTable<T extends Record<string, unknown>>({
+export function DataTable<T extends object>({
   data,
   columns,
   className,
@@ -39,6 +39,16 @@ export function DataTable<T extends Record<string, unknown>>({
             {columns.map((col) => (
               <th
                 key={String(col.key)}
+                scope="col"
+                aria-sort={
+                  col.sortable
+                    ? sortKey === String(col.key)
+                      ? sortDirection === "asc"
+                        ? "ascending"
+                        : "descending"
+                      : "none"
+                    : undefined
+                }
                 className={cn(
                   "px-4 py-3 text-left font-semibold text-[var(--color-text-primary)] whitespace-nowrap",
                   col.sortable && "cursor-pointer select-none hover:bg-[var(--color-muted-raw)]",

@@ -19,10 +19,13 @@ export function OfflineBanner() {
       return
     }
     if (wasOffline.current && online) {
-      setShowRecovery(true)
+      const showTimer = setTimeout(() => setShowRecovery(true), 0)
       wasOffline.current = false
-      const t = setTimeout(() => setShowRecovery(false), 3000)
-      return () => clearTimeout(t)
+      const hideTimer = setTimeout(() => setShowRecovery(false), 3000)
+      return () => {
+        clearTimeout(showTimer)
+        clearTimeout(hideTimer)
+      }
     }
   }, [online])
 

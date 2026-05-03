@@ -21,16 +21,13 @@ export function DevDataTestOverlay() {
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
   // Posicao do botao draggable (inicia no canto superior direito)
-  const [pos, setPos] = useState<{ x: number; y: number } | null>(null)
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(
+    () => (typeof window === 'undefined' ? null : { x: window.innerWidth - 120, y: 12 })
+  )
   const isDragging = useRef(false)
   const dragOffset = useRef({ x: 0, y: 0 })
   const hasDragged = useRef(false)
   const buttonRef = useRef<HTMLButtonElement>(null)
-
-  // Inicializa posicao apos mount (SSR safety)
-  useEffect(() => {
-    setPos({ x: window.innerWidth - 120, y: 12 })
-  }, [])
 
   const scanDataTestIds = useCallback(() => {
     const allElements = document.querySelectorAll('[data-testid]')

@@ -22,17 +22,16 @@ export function MetricCard({
   isShould = false,
   animationDuration = 1500,
 }: MetricCardProps) {
-  const [displayValue, setDisplayValue] = useState(0)
+  const prefersReducedMotion =
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const [displayValue, setDisplayValue] = useState(() => {
+    if (value === 0 || prefersReducedMotion) return value
+    return 0
+  })
 
   useEffect(() => {
-    if (value === 0) {
-      setDisplayValue(0)
-      return
-    }
-
     // Respeitar prefers-reduced-motion
-    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setDisplayValue(value)
+    if (value === 0 || prefersReducedMotion) {
       return
     }
 
@@ -50,8 +49,10 @@ export function MetricCard({
       }
     }
 
-    requestAnimationFrame(tick)
-  }, [value, animationDuration])
+    const frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
+  }, [value, animationDuration, prefersReducedMotion])
+  const shownValue = value === 0 || prefersReducedMotion ? value : displayValue
 
   return (
     <Card className="text-center p-6 transition-shadow duration-150 hover:shadow-md">
@@ -63,7 +64,7 @@ export function MetricCard({
           className="text-3xl font-bold text-[var(--color-text-primary)]"
           aria-label={`${value.toLocaleString('pt-BR')} ${label}`}
         >
-          {displayValue.toLocaleString('pt-BR')}
+          {shownValue.toLocaleString('pt-BR')}
           {unit && (
             <span className="text-lg font-normal text-[var(--color-text-secondary)] ml-1">
               {unit}

@@ -26,6 +26,18 @@ interface DemandHeatmapProps {
   className?: string
 }
 
+interface HeatmapSource {
+  setData: (data: ReturnType<typeof buildGeoJson>) => void
+}
+
+interface HeatmapMap {
+  addSource: (id: string, source: unknown) => void
+  addLayer: (layer: unknown) => void
+  getSource: (id: string) => HeatmapSource | undefined
+  on: (event: string, handler: () => void) => void
+  remove: () => void
+}
+
 // Centro padrão: Brasil (Brasília)
 const BRAZIL_CENTER: [number, number] = [-47.93, -15.77]
 const BRAZIL_ZOOM = 4
@@ -50,7 +62,7 @@ const TOGGLE_LABELS: Record<LayerMode, string> = {
 
 export function DemandHeatmap({ className }: DemandHeatmapProps) {
   const mapContainer = useRef<HTMLDivElement>(null)
-  const mapRef = useRef<any>(null)
+  const mapRef = useRef<HeatmapMap | null>(null)
 
   const [mapReady, setMapReady] = useState(false)
   const [mapError, setMapError] = useState(false)
@@ -132,7 +144,7 @@ export function DemandHeatmap({ className }: DemandHeatmapProps) {
     if (!apiData || mapRef.current || !mapContainer.current) return
     if (apiData.data.length === 0) return // empty state — não inicializa mapa
 
-    let map: any
+    let map: HeatmapMap | null = null
 
     async function initMap() {
       try {
@@ -156,7 +168,7 @@ export function DemandHeatmap({ className }: DemandHeatmapProps) {
         })
 
         map.on('load', () => {
-          addHeatmapLayer(map, apiData!.data)
+          addHeatmapLayer(map as HeatmapMap, apiData!.data)
           mapRef.current = map
           setMapReady(true)
         })
@@ -354,7 +366,7 @@ function buildGeoJson(cells: HeatmapCell[], mode: LayerMode) {
   }
 }
 
-function addHeatmapLayer(map: any, cells: HeatmapCell[]) {
+function addHeatmapLayer(map: HeatmapMap, cells: HeatmapCell[]) {
   map.addSource('heatmap-data', {
     type: 'geojson',
     data: buildGeoJson(cells, 'both'),
@@ -374,7 +386,7 @@ function addHeatmapLayer(map: any, cells: HeatmapCell[]) {
   })
 }
 
-function updateLayer(map: any, cells: HeatmapCell[], mode: LayerMode) {
+function updateLayer(map: HeatmapMap, cells: HeatmapCell[], mode: LayerMode) {
   const source = map.getSource('heatmap-data')
   if (source) {
     source.setData(buildGeoJson(cells, mode))

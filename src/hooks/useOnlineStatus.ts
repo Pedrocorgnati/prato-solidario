@@ -14,11 +14,11 @@ const PING_INTERVAL_MS = 8_000
 const PING_TIMEOUT_MS = 3_000
 
 export function useOnlineStatus(): boolean {
-  const [isOnline, setIsOnline] = useState(true)
+  const [isOnline, setIsOnline] = useState(
+    () => typeof window === 'undefined' ? true : navigator.onLine
+  )
 
   useEffect(() => {
-    setIsOnline(navigator.onLine)
-
     const handleOnline = () => setIsOnline(true)
     const handleOffline = () => setIsOnline(false)
 

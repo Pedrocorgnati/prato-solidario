@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 
   // 3. Processar cada código — erros de push não abortam o batch
   let sent = 0
-  let skipped = 0
+  const skipped = 0
   let errors = 0
 
   for (const codeId of codeIds) {

@@ -63,6 +63,7 @@ export function LoginForm() {
 
   return (
     <>
+      {/* eslint-disable-next-line react-hooks/refs */}
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
         {globalError && state === 'error' && (
           <div

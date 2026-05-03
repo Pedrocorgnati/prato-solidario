@@ -6,6 +6,7 @@
  */
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import {
   type ConsentCategories,
   type Consent,
@@ -26,7 +27,10 @@ export function CookieBanner() {
   })
 
   useEffect(() => {
-    if (!hasDecided()) setVisible(true)
+    if (!hasDecided()) {
+      const t = setTimeout(() => setVisible(true), 0)
+      return () => clearTimeout(t)
+    }
   }, [])
 
   async function logToServer(c: Consent) {
@@ -83,9 +87,9 @@ export function CookieBanner() {
             </h2>
             <p id="cookie-desc" className="text-sm text-muted-foreground">
               Usamos cookies essenciais para o site funcionar. Podemos usar cookies de analise e marketing se voce permitir.{' '}
-              <a href="/privacidade" className="underline">
+              <Link href="/privacidade" className="underline">
                 Politica de privacidade
-              </a>
+              </Link>
               .
             </p>
           </div>

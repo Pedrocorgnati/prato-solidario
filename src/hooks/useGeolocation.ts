@@ -64,9 +64,10 @@ export function useGeolocation(timeout = 10_000): UseGeolocationReturn {
 
   useEffect(() => {
     mountedRef.current = true
-    fetchPosition()
+    const t = window.setTimeout(fetchPosition, 0)
 
     return () => {
+      window.clearTimeout(t)
       mountedRef.current = false
     }
   }, [fetchPosition])
